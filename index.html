@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Soldadura - Soluciones Pesadas</title>
+    
+    <script>
+        window.onerror = function(msg, url, line) {
+            alert("ERROR TÉCNICO:\n" + msg + "\nLínea: " + line);
+            return false;
+        };
+    </script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; font-family: sans-serif; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }
+        .btn-primary { background-color: #2563eb; color: white; font-weight: bold; padding: 12px; border-radius: 8px; width: 100%; transition: background 0.2s; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        .input-field { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: #64748b;">
+            Cargando aplicación...
+        </div>
+    </div>
+
+    <script type="text/babel">
+        // --- TUS CLAVES DE FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoSYKBpIqwlMY-NhphpnQv8LPYFYLWe2Y",
+            authDomain: "sp-consumibles-app.firebaseapp.com",
+            projectId: "sp-consumibles-app",
+            storageBucket: "sp-consumibles-app.firebasestorage.app",
+            messagingSenderId: "581316149994",
+            appId: "1:581316149994:web:abefbef557dc0440fbcd93"
+        };
+
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        } catch (e) { alert("Error iniciando Firebase: " + e.message); }
+
+        // --- ICONOS Y COMPONENTES GLOBALES (Ahora están afuera para que todos los vean) ---
+        const Icon = ({ path }) => (
+            <svg style={{width:24, height:24}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} />
+            </svg>
+        );
+
+        const paths = {
+            dash: "M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z",
+            plus: "M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z",
+            list: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+            down: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
+            back: "M10 19l-7-7m0 0l7-7m-7 7h18"
+        };
+
+        const Header = ({title, setView}) => (
+            <div className="flex items-center mb-6">
+                <button onClick={() => setView('home')} className="p-2 bg-white rounded-full shadow mr-3 text-slate-600">
+                    <Icon path={paths.back} />
+                </button>
+                <h2 className="text-xl font-bold text-slate-800">{title}</h2>
+            </div>
+        );
+
+        const MASTER_LIST = [
+            { id: "1", nombre_consumible: "Oxigeno", unidad_medida_base: "lb" },
+            { id: "2", nombre_consumible: "Propano", unidad_medida_base: "lb" },
+            { id: "3", nombre_consumible: "Agamix", unidad_medida_base: "mt" },
+            { id: "4", nombre_consumible: "Argón", unidad_medida_base: "mt" },
+            { id: "5", nombre_consumible: "Soldadura 6011", unidad_medida_base: "kg" },
+            { id: "6", nombre_consumible: "Soldadura 7018 1/8", unidad_medida_base: "kg" },
+            { id: "7", nombre_consumible: "Soldadura MIG ER70S", unidad_medida_base: "kg" },
+            { id: "8", nombre_consumible: "Soldadura Niquel 100", unidad_medida_base: "unidad" },
+            { id: "9", nombre_consumible: "Discos de corte 7\"", unidad_medida_base: "unidad" },
+            { id: "10", nombre_consumible: "Discos de corte 4\"", unidad_medida_base: "unidad" },
+            { id: "11", nombre_consumible: "Discos de pulir 7\"", unidad_medida_base: "unidad" },
+            { id: "12", nombre_consumible: "Discos de pulir 4\"", unidad_medida_base: "unidad" },
+            { id: "13", nombre_consumible: "Discos Flap 4\"", unidad_medida_base: "unidad" },
+            { id: "14", nombre_consumible: "Aerosol Alta Temp", unidad_medida_base: "unidad" },
+            { id: "15", nombre_consumible: "Varilla Aluminio", unidad_medida_base: "mt" },
+            { id: "16", nombre_consumible: "Varilla Inoxidable", unidad_medida_base: "mt" }
+        ];
+
+        function App() {
+            const [view, setView] = React.useState('home');
+            const [user, setUser] = React.useState(null);
+            const [data, setData] = React.useState([]);
+
+            React.useEffect(() => {
+                const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
+                    if (u) {
+                        setUser(u);
+                        loadData();
+                    } else {
+                        firebase.auth().signInAnonymously().catch(e => alert("Error Acceso: " + e.message));
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const loadData = () => {
+                firebase.firestore().collection('consumos_diarios')
+                    .orderBy('fecha', 'desc').limit(100)
+                    .onSnapshot(snap => {
+                        const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                        setData(docs);
+                    }, e => alert("Error Carga: " + e.message));
+            };
+
+            if (!user) return <div className="flex h-screen items-center justify-center p-4">Iniciando sesión segura...</div>;
+
+            if (view === 'home') return (
+                <div className="max-w-md mx-auto p-6 pt-10">
+                    <div className="text-center mb-8">
+                        <div className="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                            <div className="text-white"><Icon path={paths.dash} /></div>
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-800">Soluciones Pesadas</h1>
+                        <p className="text-sm text-slate-500">Sistema de Control</p>
+                    </div>
+                    <div className="space-y-4">
+                        <button onClick={() => setView('add')} className="card p-4 flex items-center gap-4 w-full hover:bg-blue-50 transition">
+                            <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Icon path={paths.plus} /></div>
+                            <div className="text-left"><div className="font-bold">Registrar Consumo</div><div className="text-xs text-gray-500">Nuevo movimiento</div></div>
+                        </button>
+                        <button onClick={() => setView('report')} className="card p-4 flex items-center gap-4 w-full hover:bg-emerald-50 transition">
+                            <div className="bg-emerald-100 p-3 rounded-full text-emerald-600"><Icon path={paths.list} /></div>
+                            <div className="text-left"><div className="font-bold">Ver Reportes</div><div className="text-xs text-gray-500">Resumen mensual</div></div>
+                        </button>
+                        <button onClick={() => setView('export')} className="card p-4 flex items-center gap-4 w-full hover:bg-orange-50 transition">
+                            <div className="bg-orange-100 p-3 rounded-full text-orange-600"><Icon path={paths.down} /></div>
+                            <div className="text-left"><div className="font-bold">Exportar</div><div className="text-xs text-gray-500">Descargar Excel</div></div>
+                        </button>
+                    </div>
+                    <div className="mt-8 text-center text-xs text-gray-400">Versión 3.0 - Corregida</div>
+                </div>
+            );
+
+            if (view === 'add') return <AddScreen setView={setView} user={user} />;
+            if (view === 'report') return <ReportScreen setView={setView} data={data} />;
+            if (view === 'export') return <ExportScreen setView={setView} data={data} />;
+            return null;
+        }
+
+        const AddScreen = ({setView, user}) => {
+            const [form, setForm] = React.useState({ id: "", cant: "", obs: "" });
+            const [unit, setUnit] = React.useState("");
+            const [loading, setLoading] = React.useState(false);
+
+            const handleChange = (e) => {
+                const selectedId = e.target.value;
+                const item = MASTER_LIST.find(i => i.id === selectedId);
+                setForm({...form, id: selectedId});
+                setUnit(item ? item.unidad_medida_base : "");
+            };
+
+            const save = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                const item = MASTER_LIST.find(i => i.id === form.id);
+                try {
+                    await firebase.firestore().collection('consumos_diarios').add({
+                        fecha: new Date().toISOString().split('T')[0],
+                        consumible_id: item.nombre_consumible,
+                        cantidad: Number(form.cant),
+                        unidad_medida: unit,
+                        observaciones: form.obs,
+                        registrado_por: "Diover",
+                        fecha_registro: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert("¡Registro Guardado!");
+                    setView('home');
+                } catch(err) { alert("Error: " + err.message); }
+                setLoading(false);
+            };
+
+            return (
+                <div className="max-w-md mx-auto p-4">
+                    <Header title="Registrar Consumo" setView={setView} />
+                    <form onSubmit={save} className="card p-6 space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold mb-1 text-slate-700">Consumible</label>
+                            <select required className="input-field" value={form.id} onChange={handleChange}>
+                                <option value="">Seleccionar...</option>
+                                {MASTER_LIST.map(i => <option key={i.id} value={i.id}>{i.nombre_consumible}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <label className="block text-sm font-bold mb-1 text-slate-700">Cantidad</label>
+                                <input required type="number" step="0.01" className="input-field" value={form.cant} onChange={e=>setForm({...form, cant:e.target.value})} />
+                            </div>
+                            <div className="w-24">
+                                <label className="block text-sm font-bold mb-1 text-slate-700">Unidad</label>
+                                <input readOnly className="input-field bg-gray-100 text-gray-500" value={unit} />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1 text-slate-700">Notas</label>
+                            <textarea className="input-field" rows="2" value={form.obs} onChange={e=>setForm({...form, obs:e.target.value})}></textarea>
+                        </div>
+                        <button disabled={loading} className="btn-primary">
+                            {loading ? "Guardando..." : "Guardar Registro"}
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
+        const ReportScreen = ({setView, data}) => {
+            const [month, setMonth] = React.useState(new Date().toISOString().slice(0, 7));
+            const report = React.useMemo(() => {
+                const filtered = data.filter(d => d.fecha && d.fecha.startsWith(month));
+                const grouped = {};
+                filtered.forEach(item => {
+                    const key = item.consumible_id + item.unidad_medida;
+                    if(!grouped[key]) grouped[key] = {name: item.consumible_id, unit: item.unidad_medida, total: 0};
+                    grouped[key].total += item.cantidad;
+                });
+                return Object.values(grouped).sort((a,b) => b.total - a.total);
+            }, [data, month]);
+
+            return (
+                <div className="max-w-md mx-auto p-4">
+                    <Header title="Resumen Mensual" setView={setView} />
+                    <input type="month" className="input-field mb-4" value={month} onChange={e=>setMonth(e.target.value)} />
+                    <div className="card overflow-hidden">
+                        {report.length === 0 ? <div className="p-8 text-center text-gray-400">Sin datos</div> :
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-50 border-b">
+                                <tr><th className="p-3 text-left">Item</th><th className="p-3 text-right">Cant.</th><th className="p-3 text-left">Und.</th></tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {report.map((r,i) => (
+                                    <tr key={i}>
+                                        <td className="p-3 font-medium">{r.name}</td>
+                                        <td className="p-3 text-right font-bold text-blue-600">{r.total}</td>
+                                        <td className="p-3 text-gray-500">{r.unit}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>}
+                    </div>
+                </div>
+            );
+        };
+
+        const ExportScreen = ({setView, data}) => {
+            const [month, setMonth] = React.useState(new Date().toISOString().slice(0, 7));
+            const download = () => {
+                const filtered = data.filter(d => d.fecha && d.fecha.startsWith(month));
+                if(filtered.length === 0) return alert("No hay datos en este mes");
+                let csv = "Fecha,Item,Cantidad,Unidad,Usuario,Notas\n";
+                filtered.forEach(d => {
+                    csv += `${d.fecha},${d.consumible_id},${d.cantidad},${d.unidad_medida},${d.registrado_por},${(d.observaciones||'').replace(/,/g,' ')}\n`;
+                });
+                const link = document.createElement("a");
+                link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+                link.download = `Reporte_${month}.csv`;
+                link.click();
+            };
+
+            return (
+                <div className="max-w-md mx-auto p-4">
+                    <Header title="Exportar Datos" setView={setView} />
+                    <div className="card p-6 space-y-6">
+                        <input type="month" className="input-field" value={month} onChange={e=>setMonth(e.target.value)} />
+                        <button onClick={download} className="btn-primary bg-green-600 hover:bg-green-700 flex justify-between items-center">
+                            <span>Descargar Excel</span>
+                            <Icon path={paths.down} />
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
