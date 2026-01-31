@@ -1,46 +1,55 @@
-<!DOCTYPE html>
+
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Soldadura - Soluciones Pesadas</title>
-    
-    <script>
-        window.onerror = function(msg, url, line) {
-            alert("ERROR TÉCNICO:\n" + msg + "\nLínea: " + line);
-            return false;
-        };
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Soluciones Pesadas</title>
 
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- LIBRERÍAS EXTERNAS -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <style>
-        body { background-color: #f8fafc; font-family: sans-serif; }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }
-        .btn-primary { background-color: #2563eb; color: white; font-weight: bold; padding: 12px; border-radius: 8px; width: 100%; transition: background 0.2s; }
-        .btn-primary:hover { background-color: #1d4ed8; }
-        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
-        .input-field { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; }
+        body { background-color: #f1f5f9; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        .loader-spin { border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid #e2e8f0; }
+        .btn-primary { background-color: #2563eb; color: white; font-weight: 600; padding: 14px; border-radius: 12px; width: 100%; transition: all 0.2s; font-size: 16px; display: flex; justify-content: center; align-items: center; border: none; }
+        .btn-primary:active { transform: scale(0.98); background-color: #1d4ed8; }
+        .input-field { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 16px; outline: none; }
+        .input-field:focus { border-color: #2563eb; background: white; }
+        .animate-fade-in { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-    <div id="root">
-        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: #64748b;">
-            Cargando aplicación...
+    <!-- PANTALLA DE CARGA (SPLASH SCREEN) CON TU LOGO -->
+    <div id="root" class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-100">
+        <div class="text-center flex flex-col items-center animate-fade-in">
+            <!-- Referencia al archivo de imagen que subiste a GitHub -->
+            <img src="logo_soluciones.jpeg" 
+                 alt="Soluciones Pesadas"
+                 class="h-auto w-64 object-contain mb-8 mx-auto drop-shadow-md"
+                 onerror="this.src='https://via.placeholder.com/300x120?text=Soluciones+Pesadas'">
+            
+            <div class="loader-spin mb-6"></div>
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-widest animate-pulse">
+                Iniciando Sistema de Control
+            </p>
         </div>
     </div>
 
     <script type="text/babel">
-        // --- TUS CLAVES DE FIREBASE ---
+        // CONFIGURACIÓN FIREBASE (Ya está conectada a tu base de datos)
         const firebaseConfig = {
             apiKey: "AIzaSyAoSYKBpIqwlMY-NhphpnQv8LPYFYLWe2Y",
             authDomain: "sp-consumibles-app.firebaseapp.com",
@@ -50,13 +59,10 @@
             appId: "1:581316149994:web:abefbef557dc0440fbcd93"
         };
 
-        try {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        } catch (e) { alert("Error iniciando Firebase: " + e.message); }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
-        // --- ICONOS Y COMPONENTES GLOBALES (Ahora están afuera para que todos los vean) ---
         const Icon = ({ path }) => (
-            <svg style={{width:24, height:24}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} />
             </svg>
         );
@@ -66,17 +72,9 @@
             plus: "M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z",
             list: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
             down: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
-            back: "M10 19l-7-7m0 0l7-7m-7 7h18"
+            back: "M15 19l-7-7 7-7",
+            check: "M5 13l4 4L19 7"
         };
-
-        const Header = ({title, setView}) => (
-            <div className="flex items-center mb-6">
-                <button onClick={() => setView('home')} className="p-2 bg-white rounded-full shadow mr-3 text-slate-600">
-                    <Icon path={paths.back} />
-                </button>
-                <h2 className="text-xl font-bold text-slate-800">{title}</h2>
-            </div>
-        );
 
         const MASTER_LIST = [
             { id: "1", nombre_consumible: "Oxigeno", unidad_medida_base: "lb" },
@@ -101,54 +99,64 @@
             const [view, setView] = React.useState('home');
             const [user, setUser] = React.useState(null);
             const [data, setData] = React.useState([]);
+            const [appReady, setAppReady] = React.useState(false);
 
             React.useEffect(() => {
                 const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
                     if (u) {
                         setUser(u);
-                        loadData();
+                        firebase.firestore().collection('consumos_diarios')
+                            .orderBy('fecha_registro', 'desc').limit(50)
+                            .onSnapshot(snap => {
+                                setData(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                                setTimeout(() => setAppReady(true), 1500);
+                            });
                     } else {
-                        firebase.auth().signInAnonymously().catch(e => alert("Error Acceso: " + e.message));
+                        firebase.auth().signInAnonymously();
                     }
                 });
                 return () => unsubscribe();
             }, []);
 
-            const loadData = () => {
-                firebase.firestore().collection('consumos_diarios')
-                    .orderBy('fecha', 'desc').limit(100)
-                    .onSnapshot(snap => {
-                        const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                        setData(docs);
-                    }, e => alert("Error Carga: " + e.message));
-            };
-
-            if (!user) return <div className="flex h-screen items-center justify-center p-4">Iniciando sesión segura...</div>;
+            if (!appReady) return null;
 
             if (view === 'home') return (
-                <div className="max-w-md mx-auto p-6 pt-10">
-                    <div className="text-center mb-8">
-                        <div className="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                            <div className="text-white"><Icon path={paths.dash} /></div>
+                <div className="max-w-md mx-auto p-6 pt-10 animate-fade-in text-center">
+                    <div className="mb-10">
+                        <img src="logo_soluciones.jpeg" alt="Logo" className="h-20 mx-auto mb-4 object-contain" onerror="this.style.display='none'"/>
+                        <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Soluciones Pesadas</h1>
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Sistema de Control</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div className="card p-5 text-center">
+                            <span className="text-3xl font-black text-blue-600 block">{data.length}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Registros</span>
                         </div>
-                        <h1 className="text-2xl font-bold text-slate-800">Soluciones Pesadas</h1>
-                        <p className="text-sm text-slate-500">Sistema de Control</p>
+                        <div className="card p-5 text-center flex flex-col items-center justify-center">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 bg-emerald-500 rounded-full animate-ping"></span>
+                                <span className="text-sm font-black text-emerald-600 uppercase">En Línea</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Sincronizado</span>
+                        </div>
                     </div>
+
                     <div className="space-y-4">
-                        <button onClick={() => setView('add')} className="card p-4 flex items-center gap-4 w-full hover:bg-blue-50 transition">
-                            <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Icon path={paths.plus} /></div>
-                            <div className="text-left"><div className="font-bold">Registrar Consumo</div><div className="text-xs text-gray-500">Nuevo movimiento</div></div>
+                        <button onClick={() => setView('add')} className="card p-5 flex items-center gap-5 w-full active:bg-blue-50 transition border-l-4 border-blue-600">
+                            <div className="bg-blue-600 p-3 rounded-xl text-white shadow-md"><Icon path={paths.plus}/></div>
+                            <div className="text-left"><div className="font-bold text-slate-800">Nuevo Registro</div><div className="text-xs text-slate-400 uppercase">Salida de material</div></div>
                         </button>
-                        <button onClick={() => setView('report')} className="card p-4 flex items-center gap-4 w-full hover:bg-emerald-50 transition">
-                            <div className="bg-emerald-100 p-3 rounded-full text-emerald-600"><Icon path={paths.list} /></div>
-                            <div className="text-left"><div className="font-bold">Ver Reportes</div><div className="text-xs text-gray-500">Resumen mensual</div></div>
+                        <button onClick={() => setView('report')} className="card p-5 flex items-center gap-5 w-full active:bg-slate-50 transition border-l-4 border-slate-400">
+                            <div className="bg-slate-100 p-3 rounded-xl text-slate-600 shadow-sm"><Icon path={paths.list}/></div>
+                            <div className="text-left"><div className="font-bold text-slate-800">Historial</div><div className="text-xs text-slate-400 uppercase">Consultar movimientos</div></div>
                         </button>
-                        <button onClick={() => setView('export')} className="card p-4 flex items-center gap-4 w-full hover:bg-orange-50 transition">
-                            <div className="bg-orange-100 p-3 rounded-full text-orange-600"><Icon path={paths.down} /></div>
-                            <div className="text-left"><div className="font-bold">Exportar</div><div className="text-xs text-gray-500">Descargar Excel</div></div>
+                        <button onClick={() => setView('export')} className="card p-5 flex items-center gap-5 w-full active:bg-emerald-50 transition border-l-4 border-emerald-500">
+                            <div className="bg-emerald-100 p-3 rounded-xl text-emerald-600 shadow-sm"><Icon path={paths.down}/></div>
+                            <div className="text-left"><div className="font-bold text-slate-800">Descargar Excel</div><div className="text-xs text-slate-400 uppercase">Generar Reporte</div></div>
                         </button>
                     </div>
-                    <div className="mt-8 text-center text-xs text-gray-400">Versión 3.0 - Corregida</div>
+                    <p className="mt-12 text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest">Soluciones Pesadas © 2026</p>
                 </div>
             );
 
@@ -158,18 +166,24 @@
             return null;
         }
 
+        const Header = ({title, setView}) => (
+            <div className="flex items-center mb-6">
+                <button onClick={() => setView('home')} className="p-3 bg-white rounded-full shadow-sm mr-4 text-slate-600 active:scale-90 transition">
+                    <Icon path={paths.back} />
+                </button>
+                <h2 className="text-xl font-black text-slate-800 tracking-tight">{title}</h2>
+            </div>
+        );
+
         const AddScreen = ({setView, user}) => {
             const [form, setForm] = React.useState({ id: "", cant: "", obs: "" });
             const [unit, setUnit] = React.useState("");
             const [loading, setLoading] = React.useState(false);
-
             const handleChange = (e) => {
-                const selectedId = e.target.value;
-                const item = MASTER_LIST.find(i => i.id === selectedId);
-                setForm({...form, id: selectedId});
+                const item = MASTER_LIST.find(i => i.id === e.target.value);
+                setForm({...form, id: e.target.value});
                 setUnit(item ? item.unidad_medida_base : "");
             };
-
             const save = async (e) => {
                 e.preventDefault();
                 setLoading(true);
@@ -180,110 +194,95 @@
                         consumible_id: item.nombre_consumible,
                         cantidad: Number(form.cant),
                         unidad_medida: unit,
-                        observaciones: form.obs,
+                        observaciones: form.obs || "Sin notas",
                         registrado_por: "Diover",
                         fecha_registro: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    alert("¡Registro Guardado!");
                     setView('home');
-                } catch(err) { alert("Error: " + err.message); }
+                } catch(err) { alert("Error guardando: " + err.message); }
                 setLoading(false);
             };
-
             return (
-                <div className="max-w-md mx-auto p-4">
-                    <Header title="Registrar Consumo" setView={setView} />
-                    <form onSubmit={save} className="card p-6 space-y-4">
+                <div className="max-w-md mx-auto p-6 min-h-screen bg-[#f1f5f9] animate-fade-in">
+                    <Header title="Nuevo Registro" setView={setView} />
+                    <form onSubmit={save} className="card p-6 space-y-6">
                         <div>
-                            <label className="block text-sm font-bold mb-1 text-slate-700">Consumible</label>
-                            <select required className="input-field" value={form.id} onChange={handleChange}>
-                                <option value="">Seleccionar...</option>
+                            <label className="block text-xs font-black text-slate-400 uppercase mb-2">Material / Consumible</label>
+                            <select required className="input-field font-bold" value={form.id} onChange={handleChange}>
+                                <option value="">Seleccionar material...</option>
                                 {MASTER_LIST.map(i => <option key={i.id} value={i.id}>{i.nombre_consumible}</option>)}
                             </select>
                         </div>
                         <div className="flex gap-4">
                             <div className="flex-1">
-                                <label className="block text-sm font-bold mb-1 text-slate-700">Cantidad</label>
-                                <input required type="number" step="0.01" className="input-field" value={form.cant} onChange={e=>setForm({...form, cant:e.target.value})} />
+                                <label className="block text-xs font-black text-slate-400 uppercase mb-2">Cantidad</label>
+                                <input required type="number" step="0.01" placeholder="0.00" className="input-field font-bold text-blue-600" value={form.cant} onChange={e=>setForm({...form, cant:e.target.value})} />
                             </div>
                             <div className="w-24">
-                                <label className="block text-sm font-bold mb-1 text-slate-700">Unidad</label>
-                                <input readOnly className="input-field bg-gray-100 text-gray-500" value={unit} />
+                                <label className="block text-xs font-black text-slate-400 uppercase mb-2">Unidad</label>
+                                <input readOnly className="input-field bg-slate-100 text-center font-bold text-slate-400" value={unit || '-'} />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-bold mb-1 text-slate-700">Notas</label>
-                            <textarea className="input-field" rows="2" value={form.obs} onChange={e=>setForm({...form, obs:e.target.value})}></textarea>
+                            <label className="block text-xs font-black text-slate-400 uppercase mb-2">Notas / Observaciones</label>
+                            <textarea className="input-field" rows="3" placeholder="Detalles adicionales..." value={form.obs} onChange={e=>setForm({...form, obs:e.target.value})}></textarea>
                         </div>
-                        <button disabled={loading} className="btn-primary">
-                            {loading ? "Guardando..." : "Guardar Registro"}
+                        <button disabled={loading} className="btn-primary shadow-lg shadow-blue-200">
+                            {loading ? "Procesando..." : "Guardar Registro"}
                         </button>
                     </form>
                 </div>
             );
         };
 
-        const ReportScreen = ({setView, data}) => {
-            const [month, setMonth] = React.useState(new Date().toISOString().slice(0, 7));
-            const report = React.useMemo(() => {
-                const filtered = data.filter(d => d.fecha && d.fecha.startsWith(month));
-                const grouped = {};
-                filtered.forEach(item => {
-                    const key = item.consumible_id + item.unidad_medida;
-                    if(!grouped[key]) grouped[key] = {name: item.consumible_id, unit: item.unidad_medida, total: 0};
-                    grouped[key].total += item.cantidad;
-                });
-                return Object.values(grouped).sort((a,b) => b.total - a.total);
-            }, [data, month]);
-
-            return (
-                <div className="max-w-md mx-auto p-4">
-                    <Header title="Resumen Mensual" setView={setView} />
-                    <input type="month" className="input-field mb-4" value={month} onChange={e=>setMonth(e.target.value)} />
-                    <div className="card overflow-hidden">
-                        {report.length === 0 ? <div className="p-8 text-center text-gray-400">Sin datos</div> :
-                        <table className="w-full text-sm">
-                            <thead className="bg-slate-50 border-b">
-                                <tr><th className="p-3 text-left">Item</th><th className="p-3 text-right">Cant.</th><th className="p-3 text-left">Und.</th></tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {report.map((r,i) => (
-                                    <tr key={i}>
-                                        <td className="p-3 font-medium">{r.name}</td>
-                                        <td className="p-3 text-right font-bold text-blue-600">{r.total}</td>
-                                        <td className="p-3 text-gray-500">{r.unit}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>}
-                    </div>
+        const ReportScreen = ({setView, data}) => (
+            <div className="max-w-md mx-auto p-6 min-h-screen bg-[#f1f5f9] animate-fade-in">
+                <Header title="Historial" setView={setView} />
+                <div className="card overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b font-bold text-slate-400 text-[10px] uppercase tracking-widest">Últimos Registros del Taller</div>
+                    {data.length === 0 ? <div className="p-10 text-center text-slate-300">No hay movimientos registrados</div> :
+                    <div className="divide-y divide-slate-100 max-h-[70vh] overflow-y-auto">
+                        {data.map(item => (
+                            <div key={item.id} className="p-4 flex justify-between items-center bg-white hover:bg-slate-50 transition">
+                                <div>
+                                    <div className="font-bold text-slate-800">{item.consumible_id}</div>
+                                    <div className="text-[10px] font-bold text-slate-300 uppercase mt-1">📅 {item.fecha}</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-black text-blue-600 text-lg">{item.cantidad}</div>
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.unidad_medida}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>}
                 </div>
-            );
-        };
+            </div>
+        );
 
         const ExportScreen = ({setView, data}) => {
             const [month, setMonth] = React.useState(new Date().toISOString().slice(0, 7));
             const download = () => {
                 const filtered = data.filter(d => d.fecha && d.fecha.startsWith(month));
-                if(filtered.length === 0) return alert("No hay datos en este mes");
-                let csv = "Fecha,Item,Cantidad,Unidad,Usuario,Notas\n";
+                if(filtered.length === 0) return alert("No hay datos para este mes");
+                let csv = "\uFEFFFecha,Consumible,Cantidad,Unidad,Registrado Por,Observaciones\n";
                 filtered.forEach(d => {
-                    csv += `${d.fecha},${d.consumible_id},${d.cantidad},${d.unidad_medida},${d.registrado_por},${(d.observaciones||'').replace(/,/g,' ')}\n`;
+                    csv += `${d.fecha},"${d.consumible_id}",${d.cantidad},${d.unidad_medida},${d.registrado_por},"${(d.observaciones||'').replace(/,/g,' ')}"\n`;
                 });
                 const link = document.createElement("a");
-                link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
-                link.download = `Reporte_${month}.csv`;
+                link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+                link.download = `Reporte_Soldadura_${month}.csv`;
                 link.click();
             };
-
             return (
-                <div className="max-w-md mx-auto p-4">
-                    <Header title="Exportar Datos" setView={setView} />
-                    <div className="card p-6 space-y-6">
-                        <input type="month" className="input-field" value={month} onChange={e=>setMonth(e.target.value)} />
-                        <button onClick={download} className="btn-primary bg-green-600 hover:bg-green-700 flex justify-between items-center">
-                            <span>Descargar Excel</span>
-                            <Icon path={paths.down} />
+                <div className="max-w-md mx-auto p-6 min-h-screen bg-[#f1f5f9] animate-fade-in">
+                    <Header title="Exportar Reporte" setView={setView} />
+                    <div className="card p-8 space-y-6">
+                        <div>
+                            <label className="block text-xs font-black text-slate-400 uppercase mb-2">Seleccionar Período</label>
+                            <input type="month" className="input-field font-bold text-slate-600" value={month} onChange={e=>setMonth(e.target.value)} />
+                        </div>
+                        <button onClick={download} className="btn-primary bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100">
+                            Generar Excel (.CSV)
                         </button>
                     </div>
                 </div>
